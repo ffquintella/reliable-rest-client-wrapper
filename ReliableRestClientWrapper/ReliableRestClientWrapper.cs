@@ -25,9 +25,9 @@ namespace ReliableRestClient
 
         private readonly IAsyncPolicy _retryPolicy;
 
-        private int[] HttpStatusCodesWorthRetrying = { 500, 502, 503 };
+        private int[] HttpStatusCodesWorthRetrying = { 500, 502, 503, 504 };
 
-        private int[] HttpStatusCodesTimeout = { 0, 408, 504 };
+        private int[] HttpStatusCodesTimeout = { 0, 408 };
 
 
         public ReliableRestClientWrapper(IRestClient innerClient, IAsyncPolicy retryPolicy) : base()
@@ -43,8 +43,27 @@ namespace ReliableRestClient
             
             await _retryPolicy.ExecuteAsync(async () =>
             {
-                response = await _innerClient.ExecuteAsync(request);
-                ProcessResponse(response);
+                bool retry = true;
+                int attempts = 0;
+                while (retry)
+                {
+                    attempts++;
+                    try
+                    {
+                        response = await _innerClient.ExecuteAsync(request);
+                        ProcessResponse(response);
+                        retry = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (attempts > 10)
+                        {
+                            throw ex;
+                        }
+                    }
+                }
+
+
 
             });
 
