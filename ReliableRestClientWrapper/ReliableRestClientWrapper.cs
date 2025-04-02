@@ -54,11 +54,11 @@ namespace ReliableRestClient
                         ProcessResponse(response);
                         retry = false;
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         if (attempts > 10)
                         {
-                            throw ex;
+                            throw;
                         }
                     }
                 }
