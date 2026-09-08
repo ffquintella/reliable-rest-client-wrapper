@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <PackageId>ReliableRestClientWrapper</PackageId>
     <Title>ReliableRestClientWrapper</Title>
     <Description>Wrapper for RestSharp that provides resilience via the Polly library.</Description>
@@ -11,7 +11,9 @@
     <PackageTags>RestSharp Rest Client Resilience Retry Retries Polly</PackageTags>
     <IncludeSource>false</IncludeSource>
     <PackageReleaseNotes>
-      First release including resilience in RestSharp synchronous operations.
+      0.1.2 - ExecuteAsync no longer runs its own loop of up to eleven undelayed attempts inside the
+      caller's policy. The injected IAsyncPolicy now owns the retry count, the backoff and the set of
+      retryable exceptions, and the caller's CancellationToken reaches the inner client.
     </PackageReleaseNotes>
     <TargetFramework>net10.0</TargetFramework>
     <Configurations>Debug;Release</Configurations>
