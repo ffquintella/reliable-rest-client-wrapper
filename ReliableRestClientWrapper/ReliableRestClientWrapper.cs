@@ -37,39 +37,33 @@ namespace ReliableRestClient
         }
 
 
+        /// <summary>
+        /// Sends the request through the injected policy — once per policy attempt, and no more.
+        ///
+        /// The retry count, the wait between attempts and the set of exceptions worth retrying all
+        /// belong to the <see cref="IAsyncPolicy"/> the caller passed in; that is the whole point of
+        /// passing one. This method's only job is to run a single request and translate the retryable
+        /// status codes into the exceptions the policy is configured to handle.
+        ///
+        /// It used to run its own <c>while</c> loop of up to eleven attempts *inside* the policy, with
+        /// no wait between them and a <c>catch (Exception)</c> that swallowed everything — so a caller's
+        /// ten-retry policy sent up to 121 requests, most within milliseconds, and a JsonException took
+        /// eleven round trips to surface. See the tests in <c>ExecuteAsyncRetryTest</c>.
+        /// </summary>
         public new async Task<RestResponse> ExecuteAsync(RestRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             RestResponse response = null;
-            
-            await _retryPolicy.ExecuteAsync(async () =>
+
+            // The response is captured rather than returned out of ExecuteAsync so that a policy which
+            // handles the exception without rethrowing (a Fallback, for instance) still yields the last
+            // response received, as it did before.
+            await _retryPolicy.ExecuteAsync(async ct =>
             {
-                bool retry = true;
-                int attempts = 0;
-                while (retry)
-                {
-                    attempts++;
-                    try
-                    {
-                        response = await _innerClient.ExecuteAsync(request);
-                        ProcessResponse(response);
-                        retry = false;
-                    }
-                    catch (Exception)
-                    {
-                        if (attempts > 10)
-                        {
-                            throw;
-                        }
-                    }
-                }
-
-
-
-            });
-
+                response = await _innerClient.ExecuteAsync(request, ct);
+                ProcessResponse(response);
+            }, cancellationToken);
 
             return response;
-            
         }
 
 
